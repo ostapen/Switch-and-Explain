@@ -1,56 +1,34 @@
-# SelfExplain Framework
+# Switch-and-Explain
+An XLM-RoBERTa based classifier for predicting code-switch points from English-Spanish human--human dialogue.
 
-The code for the SelfExplain framework (https://arxiv.org/abs/2103.12279) 
 
-Currently, this repo supports SelfExplain-XLNet version for SST-2 dataset. The other datasets and models shown in the paper will be updated soon.
+
+This code incorporates the LIL layer from the SelfExplain framework (https://arxiv.org/abs/2103.12279)
+
+Make sure to unzip the data folder and put it in an enclosing folder named bangor_data, otherwise rename the filepaths for '$DATA_FOLDER' or --dataset_basedir in the sh scripts below.
 
 ## Preprocessing
 
-Data for preprocessing available in `data/` folder
+Data for preprocessing available in `bangor_data/` folder.
 
-On a python shell, do the following for installing the parser
+To run scripts for getting the phrase masks, use:
 
-```python
->>> import benepar
->>> benepar.download('benepar_en3')
+# For baseline masking:
+```shell
+sh scripts/run_preprocessing_bangor_idx.sh
 ```
+# For masking speaker descriptions + dialogues (this will take a while)
+```shell
+sh scripts/run_preprocessing_bangor_desc.sh
+```
+
+## Training Baselines on 10 seeds for context size 1, and extracting LIL interpretations:
 
 ```shell
-sh scripts/run_preprocessing.sh
+sh scripts/baseline_train_ctx1.sh
 ```
 
-
-## Training
-
+## Training speaker List models on 10 seeds for context size 1 and extracting LIL interpretations:
 ```shell
-sh scripts/run_self_explain.sh
-```
-## Generation (Inference)
-
-(In Progress)
-
-```sh
- python model/infer_model.py
-        --ckpt $PATH_TO_BEST_DEV_CHECKPOINT \
-        --concept_map $DATA_FOLDER/concept_idx.json \ 
-        --batch_size $BS \
-        --paths_output_loc $PATH_TO_OUTPUT_PREDS \
-        --dev_file $PATH_TO_DEV_FILE
- ```
-
-## Demo 
-
-Coming Soon ... 
-
-## Citation 
-
-```
-@misc{rajagopal2021selfexplain,
-      title={SelfExplain: A Self-Explaining Architecture for Neural Text Classifiers}, 
-      author={Dheeraj Rajagopal and Vidhisha Balachandran and Eduard Hovy and Yulia Tsvetkov},
-      year={2021},
-      eprint={2103.12279},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
-}
+sh scripts/list_models_ctx1.sh
 ```

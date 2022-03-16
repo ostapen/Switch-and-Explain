@@ -21,7 +21,10 @@ from interpret_bangor import SwitchLMForEval
 def get_train_steps(dm):
   total_devices = args.num_gpus * args.num_nodes
   train_batches = len(dm.train_dataloader()) // total_devices
-  return (args.max_epochs * train_batches) // args.accumulate_grad_batches
+  accumulate_grad_batches = args.accumulate_grad_batches
+  if args.accumulate_grad_batches is None:
+      accumulate_grad_batches = 1
+  return (args.max_epochs * train_batches) // accumulate_grad_batches
 
 
 
@@ -51,7 +54,7 @@ parser.add_argument("--monitor", default="acc",type=str, help="monitor loss, acc
 parser.add_argument("--control", action='store_true', help="load control data for finetuning")
 parser.add_argument("--ckpt", default="",type=str, help="ckpt from which to load and finetune a model")
 parser.add_argument("--tensorboard_dir", default="tb_logs",type=str, help="tensorboard directory for logs")
-
+parser.add_argument("--spk_control", action='store_true', help="use 'fake' speaker descriptions as a control")
 parser.add_argument("--seed", default=18,type=int, help="seed for model run")
 
 
@@ -97,7 +100,7 @@ else:
                             batch_size=args.batch_size, codeswitch=True, num_workers=args.num_workers, balanced=balanced, use_speaker_tokens=False,use_eot_tokens=False, use_speaker_descriptions=False,\
                             load_control_data=args.control, load_full_control=False, load_list_desc =args.list, load_sent_desc = args.sentence, \
                             do_social_predictions=speaker_trait_predictions, load_partner_desc=args.partner, load_triplet=args.triplet_loss,  full_mtl_setup=args.full_mtl_setup, \
-                            language=args.language, age=args.age, gender=args.gender, mixing=args.mixing, country=args.country,order=args.order, leave_one_out=args.leave_one_out)
+                            language=args.language, age=args.age, gender=args.gender, mixing=args.mixing, country=args.country,order=args.order, leave_one_out=args.leave_one_out, fake_spk=args.spk_control)
 
 # Step 2: Init Model
 model_tmp = None
@@ -253,12 +256,14 @@ if args.gpus > 1:
     accelerator='dp'
 
 accumulate_grad_batches=args.accumulate_grad_batches
+if accumulate_grad_batches is None:
+    accumulate_grad_batches = 1
 # if any([args.age_mlm, args.language_mlm, args.gender_mlm, args.mixing_mlm]):
 #     accumulate_grad_batches =
 trainer = pl.Trainer.from_argparse_args(args, log_every_n_steps=25, accumulate_grad_batches = accumulate_grad_batches, precision=16, callbacks=[checkpoint_callback], accelerator=accelerator, val_check_interval=0.5, gradient_clip_val=args.clip_grad, track_grad_norm=2, stochastic_weight_avg=True, logger=logger)
 trainer.fit(model, dm)
 if not args.control and not args.triplet_loss and not args.finetune_bangor:
-    trainer.test(ckpt_path='best')
+    trainer.test(ckpt_path='best', test_dataloaders= dm.test_dataloader())
 print("evaluating/interpreting results... ")
 rand='random' in args.dataset_basedir
 best= SwitchLMForEval(checkpoint_callback.best_model_path, control=False, threshold=-1, do_only_eval=False, prepend_description=True, seed=SEED, random=rand)
@@ -273,7 +278,7 @@ else:
                             batch_size=1, codeswitch=True, num_workers=args.num_workers, balanced=False, use_speaker_tokens=False,use_eot_tokens=False, use_speaker_descriptions=False, \
                             load_control_data=args.control, load_full_control=False, load_list_desc =args.list, load_sent_desc = args.sentence, \
                             do_social_predictions=speaker_trait_predictions, load_partner_desc=args.partner, load_triplet=args.triplet_loss,  full_mtl_setup=args.full_mtl_setup, \
-                            language=args.language, age=args.age, gender=args.gender, mixing=args.mixing, country=args.country,order=args.order, leave_one_out=args.leave_one_out)
+                            language=args.language, age=args.age, gender=args.gender, mixing=args.mixing, country=args.country,order=args.order, leave_one_out=args.leave_one_out, fake_spk=args.spk_control)
 
 test_file_list = [False, True]
 # if args.control_data:

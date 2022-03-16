@@ -393,7 +393,7 @@ class ParsedDataset(object):
         return ' </s> '.join(desc_to_keep)
 
 
-    def read_and_store_from_csv(self, binned_files, spk_files, control_data=False, valid=False):
+    def read_and_store_from_csv(self, binned_files, spk_files, control_data=False, valid=False, spk_fake=False):
         input_file_name, output_file_name = binned_files
         csv_full = pd.read_csv(input_file_name)
         if not control_data:
@@ -408,6 +408,8 @@ class ParsedDataset(object):
         desc_types = ['partner', 'list']
         #if not control_data:
         desc_types.append('sentence')
+        if spk_fake:
+            desc_types = ['partner', 'sentence']
         #desc_types.append('partner')
         #desc_types.append('list_mask')
         #for ctx_size in range(1, 11):
@@ -418,16 +420,26 @@ class ParsedDataset(object):
         data_to_add = {}
         sentences_all = list(csv['sentence_spk'].apply(lambda x: ast.literal_eval(x)))
         list_descs_all = list(csv['list_description'].apply(lambda x: ast.literal_eval(x)))
-        sent_descs_all = list(csv['sentence_description'].apply(lambda x: ast.literal_eval(x)))
-        partner_descs_all = list(csv['partner_description'])
+        #sent_descs_all = list(csv['sentence_description'].apply(lambda x: ast.literal_eval(x)))
+        #partner_descs_all = list(csv['partner_description'])
+        if spk_fake:
+            partner_descs_all = list(csv['partner_control'])
+            sent_descs_all = list(csv['sentence_control'].apply(lambda x: ast.literal_eval(x)))
+        else:
+            sent_descs_all = list(csv['sentence_description'].apply(lambda x: ast.literal_eval(x)))
+            partner_descs_all = list(csv['partner_description'])
         spk_orders = list(csv['speakerOrder'].apply(lambda x: ast.literal_eval(x)))
         spk_context = list(csv['speakerIds'].apply(lambda x: ast.literal_eval(x)))
         list_descs_masked = []
         sent_descs_masked = []
         partner_descs_masked = []
+        ctx_list = [1,2,3,5,7,9,10]
+        if spk_fake:
+            ctx_list = [5]
+        total = len(ctx_list)
         ## save utterances as a list.. then in data load, take utts of [-(ctx+1):], join with spk desk
         ## can save nt's separately
-        for ctx_size in tqdm([1,2,3,5,7,9,10], total=7):
+        for ctx_size in tqdm(ctx_list, total=total):
             """
             self.use_speaker_tokens = use_speaker_tokens
             if use_speaker_tokens:
@@ -455,7 +467,10 @@ class ParsedDataset(object):
                     #descs = [' </s> '.join(sorted(list(set(ld[-1*(ctx_size+1):])))) for ld in sent_descs_all]
                     #descs = list(map(get_reduced_set,sent_descs_all, [ctx_size]*len(sent_descs_all)))
                 else:
-                    descs = list(map(self.clean_desc, spk_orders, spk_context, partner_descs_all, [ctx_size]*len(partner_descs_all)))
+                    if not spk_fake:
+                        descs = list(map(self.clean_desc, spk_orders, spk_context, partner_descs_all, [ctx_size]*len(partner_descs_all)))
+                    else:
+                        descs = partner_descs_all
 
 
                     csv_full['partner_description{}'.format(ctx_size)] = ['',''] + descs
@@ -689,11 +704,13 @@ class ParsedDataset(object):
             #csv_full[col_spk] = data_spk
             #csv_full[col_] =data_
             csv_full = pd.concat([csv_full, tmp], axis=1)
-            csv_full.drop(columns=['partner_description'], inplace=True)
+            if 'partner_description' in csv_full.columns:
+                csv_full.drop(columns=['partner_description'], inplace=True)
 
             if binned_files is not None:
                 csv_bin = pd.concat([csv_bin, tmp], axis=1)
-                csv_bin.drop(columns=['partner_description'], inplace=True)
+                if 'partner_description' in csv_bin.columns:
+                    csv_bin.drop(columns=['partner_description'], inplace=True)
                 # csv_bin[col_spk] = data_spk
                 # csv_bin[col_] =data_
         except:
@@ -719,6 +736,8 @@ def main():
                         help="The input data dir. Should contain the .csv files (or other data files) for the task.")
     parser.add_argument("--balanced", action='store_true',
                         help="Whether to parse balanced or unbalanced set.")
+    parser.add_argument("--spk_control", action='store_true',
+                        help="parse descriptions for unrelated speaker features scenario.")
 
     parser.add_argument("--non_overlap_phrases", action='store_true',
                         help="Whether to take only every unique ngram or overlap phrases.")
@@ -771,7 +790,7 @@ def main():
             control_ = '_control'
         spk_in = os.path.join(args.data_dir, 'speaker_description{}.csv'.format(control_))
         spk_out =os.path.join(args.data_dir, 'speaker_description{}_with_parse.csv'.format(control_))
-        parsed_data.read_and_store_from_csv(binned_files=(input_file_name_binned, output_file_name_binned), spk_files = (spk_in, spk_out), control_data = args.control_data, valid=val)
+        parsed_data.read_and_store_from_csv(binned_files=(input_file_name_binned, output_file_name_binned), spk_files = (spk_in, spk_out), control_data = args.control_data, valid=val, spk_fake = args.spk_control)
 
 
 if __name__ == "__main__":

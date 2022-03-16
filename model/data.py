@@ -32,7 +32,7 @@ class ClassificationData(pl.LightningDataModule):
                  get_lang_feats: bool=False, context_size: int=1, load_only_balanced: bool=False, load_control_data = False, load_description_data=False,\
                  load_list_desc = False, load_sent_desc = False, full_mtl_setup = False, load_partner_desc = False, load_triplet = False, load_finetune_bangor = False, \
                  do_social_predictions = False, age=False, language=False, order=False, gender=False, mixing=False, country=False, \
-                 leave_one_out = False):
+                 leave_one_out = False, fake_spk=False):
         super().__init__()
         self.basedir = basedir
         self.batch_size = batch_size
@@ -42,6 +42,7 @@ class ClassificationData(pl.LightningDataModule):
         self.load_control_data = load_control_data
         self.load_triplet = load_triplet
         self.load_finetune_bangor = load_finetune_bangor
+        self.fake_spk = fake_spk
         if not load_control_data:
             load_full_control = False
         self.load_full_control = load_full_control
@@ -607,6 +608,9 @@ class BangorDataset(ClassificationDataset):
 
 
     def read_dataset(self):
+        print("------")
+        print(self.data_path)
+        print("------")
         data = pd.read_csv(self.data_path)
         if not self.control_data:
             # if self.load_finetune:
