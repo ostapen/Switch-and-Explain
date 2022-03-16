@@ -15,20 +15,20 @@ To run scripts for getting the phrase masks, use:
 
 # For baseline masking:
 ```shell
-sh scripts/run_preprocessing_bangor_idx.sh
+./scripts/run_preprocessing_bangor_idx.sh
 ```
 # For masking speaker descriptions + dialogues (this will take a while)
 ```shell
-sh scripts/run_preprocessing_bangor_desc.sh
+./scripts/run_preprocessing_bangor_desc.sh
 ```
 
 ## Training Baselines on 10 seeds for context size 1, and extracting LIL interpretations:
 
 ```shell
-sh scripts/baseline_train_ctx1.sh
+./scripts/baseline_train_ctx1.sh
 ```
 
 ## Training speaker List models on 10 seeds for context size 1 and extracting LIL interpretations:
 ```shell
-sh scripts/list_models_ctx1.sh
+./scripts/list_models_ctx1.sh
 ```
