@@ -1,5 +1,7 @@
 # SCRIPTS for beaker
-
+*/.ipynb_checkpoints/
+.DS_Store
+*/.DS_Store
 beaker/*
 run_beaker_jobs.sh
 
