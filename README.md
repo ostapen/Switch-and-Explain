@@ -1,6 +1,7 @@
 # Switch-and-Explain
 An XLM-RoBERTa based classifier for predicting code-switch points from English-Spanish human--human dialogue.
 
+Link to the full paper and citation [here](https://aclanthology.org/2022.acl-long.267/).
 
 
 This code incorporates the LIL layer from the SelfExplain framework (https://arxiv.org/abs/2103.12279)
